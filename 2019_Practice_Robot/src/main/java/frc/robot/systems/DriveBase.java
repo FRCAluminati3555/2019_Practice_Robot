@@ -30,6 +30,9 @@ public class DriveBase {
     private TalonSRX blm;
     private TalonSRX brm;
 
+    // Drive status
+    private boolean joystickEnabled = false;
+
     // Private instance for drivetrain
     private static DriveBase instance = new DriveBase();
 
@@ -69,9 +72,95 @@ public class DriveBase {
     }
 
     /**
-     * This method tells the drivetrain to drive based on the joystick input
+     * Returns true if the joystick is enabled
+     * 
+     * @return True if the joystick is enabled
      */
-    public void drive(ControlMode controlMode, double controlX, double controlY, double throttle, double magnitude) {
+    public boolean getJoystickEnabled() {
+        return joystickEnabled;
+    }
+
+    /**
+     * Enables or disables the joystick
+     */
+    private void setJoystickEnabled(boolean joystickEnabled) {
+        this.joystickEnabled = joystickEnabled;
+    }
+
+    /**
+     * Disables the joystick and stops the drive
+     */
+    public void disableJoystick() {
+        setJoystickEnabled(false);
+        drive(0, 0);
+
+        System.out.println("[code] Joystick disabled");
+    }
+
+    /**
+     * Enables the joystick
+     */
+    public void enableJoystick() {
+        setJoystickEnabled(true);
+        drive(0, 0);
+
+        System.out.println("[code] Joystick enabled");
+    }
+
+    /**
+     * Drives the motors with percentages (don't need to invert rightPower)
+     * 
+     * @param leftPower  The left power
+     * @param rightPower The right power
+     */
+    public void drive(double leftPower, double rightPower) {
+        blm.set(ControlMode.PercentOutput, leftPower);
+        brm.set(ControlMode.PercentOutput, rightPower);
+    }
+
+    /**
+     * Drives the motors with percentages for a period of time (don't need to invert
+     * rightPower)
+     * 
+     * @param leftPower  The left power
+     * @param rightPower The right power
+     * @param seconds    The time to drive
+     * @param startTiem  The time the maneuver was first started
+     * @return True if maneuver is complete
+     */
+    public boolean drive(double leftPower, double rightPower, double seconds, long startTime) {
+        // Compute time in milliseconds
+        long waitTime = (int) (1000 * seconds);
+
+        // Maneuver done?
+        if (System.currentTimeMillis() >= startTime + waitTime) {
+            // Stop robot and return true
+            drive(0, 0);
+
+            return true;
+        }
+
+        // Call other drive method if the maneuver is not complete
+        drive(leftPower, rightPower);
+
+        // Return false because the maneuver is not completed
+        return false;
+    }
+
+    /**
+     * This method tells the drivetrain to drive based on the joystick input
+     * 
+     * @param controlX  Joystick x
+     * @param controlY  Joystick y
+     * @param throttle  Joystick z
+     * @param magnitude Joystick magnitude
+     */
+    public void arcadeDrive(double controlX, double controlY, double throttle, double magnitude) {
+        // Do nothing if the joystick is disabled
+        if (!getJoystickEnabled()) {
+            return;
+        }
+
         // Invert controlY
         controlY = -controlY;
 
@@ -140,8 +229,8 @@ public class DriveBase {
             rightPower = 1;
         }
 
-        blm.set(controlMode, leftPower);
-        brm.set(controlMode, rightPower);
+        blm.set(ControlMode.PercentOutput, leftPower);
+        brm.set(ControlMode.PercentOutput, rightPower);
     }
 
     /**

@@ -6,7 +6,6 @@
 
 package frc.robot;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import frc.robot.systems.Camera;
@@ -67,6 +66,9 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     System.out.println("[code] Initializing auto...");
+
+    // Enable joystick
+    drivetrain.enableJoystick();
   }
 
   /**
@@ -75,8 +77,7 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     // Update drivetrain output with joystick
-    drivetrain.drive(ControlMode.PercentOutput, joystick.getX(), joystick.getY(), joystick.getZ(),
-        joystick.getMagnitude());
+    drivetrain.arcadeDrive(joystick.getX(), joystick.getY(), joystick.getZ(), joystick.getMagnitude());
   }
 
   /**
@@ -85,6 +86,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     System.out.println("[code] Initializing teleop...");
+    
+    // Always enable joystick when teleop starts in case we are testing or something is wrong
+    drivetrain.enableJoystick();
   }
 
   /**
@@ -93,8 +97,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     // Update drivetrain output with joystick
-    drivetrain.drive(ControlMode.PercentOutput, joystick.getX(), joystick.getY(), joystick.getZ(),
-        joystick.getMagnitude());
+    drivetrain.arcadeDrive(joystick.getX(), joystick.getY(), joystick.getZ(), joystick.getMagnitude());
   }
 
   /**

@@ -22,6 +22,10 @@ import frc.robot.systems.DriveBase;
 public class Robot extends TimedRobot {
   // Constants
   public static final double DRIVE_DOWN_POWER = 0.25;
+  public static final long CLIMBER_PISTON_ACTUATION_TIME = 3000;
+
+  public static final int STOP_AUTO_BUTTON_1 = 1;
+  public static final int STOP_AUTO_BUTTON_2 = 2;
 
   // Start time
   public static long stateStartTime = 0l;
@@ -82,7 +86,7 @@ public class Robot extends TimedRobot {
 
     // Set first command
     stateStartTime = System.currentTimeMillis();
-    climbDownStopTime = stateStartTime + 3000;
+    climbDownStopTime = stateStartTime + CLIMBER_PISTON_ACTUATION_TIME;
 
     robotState = AutoState.DwnPistonExtend;
   }
@@ -92,6 +96,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
+    // Check for an auto cancellation
+    if (joystick.getRawButton(STOP_AUTO_BUTTON_1) && joystick.getRawButton(STOP_AUTO_BUTTON_2)) {
+      // The drivers have cancelled the auto
+      drivetrain.enableJoystick();
+      robotState = AutoState.ClimbDwnDone;
+      System.out.println("[code] Auto cancelled");
+    }
+
+    // Update drivetrain output with joystick if it is enabled
+    drivetrain.arcadeDrive(joystick.getX(), joystick.getY(), joystick.getZ(), joystick.getMagnitude());
+
+    // Process state
     switch (robotState) {
     case DwnPistonExtend:
       // ACTIVATE SOLENOID 4
@@ -105,7 +121,7 @@ public class Robot extends TimedRobot {
     case DwnDriveFwdY:
       if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 1, stateStartTime)) {
         stateStartTime = System.currentTimeMillis();
-        climbDownStopTime = stateStartTime + 3000;
+        climbDownStopTime = stateStartTime + CLIMBER_PISTON_ACTUATION_TIME;
 
         robotState = AutoState.DwnPistonRetract;
       }
@@ -128,12 +144,12 @@ public class Robot extends TimedRobot {
     case ClimbDwnDone:
       break;
     default:
+      // Something is wrong. Give control to the drivers
+      System.out.println("[code] Invalid state detected");
+      drivetrain.enableJoystick();
       robotState = AutoState.ClimbDwnDone;
       break;
     }
-
-    // Update drivetrain output with joystick
-    drivetrain.arcadeDrive(joystick.getX(), joystick.getY(), joystick.getZ(), joystick.getMagnitude());
   }
 
   /**

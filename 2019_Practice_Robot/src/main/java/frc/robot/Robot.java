@@ -24,7 +24,7 @@ import frc.robot.systems.DriveBase;
 
 public class Robot extends TimedRobot {
   // Constants
-  public static final double DRIVE_DOWN_POWER = 0.25;
+  public static final double DRIVE_DOWN_POWER = -0.25;
   public static final long CLIMBER_PISTON_ACTUATION_TIME = 3000;
   public static final double DRIVE_UP_POWER = 0.25;
 

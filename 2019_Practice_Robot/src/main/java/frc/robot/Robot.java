@@ -8,6 +8,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import frc.robot.systems.AutoState;
 import frc.robot.systems.Camera;
 import frc.robot.systems.DriveBase;
 
@@ -19,6 +20,18 @@ import frc.robot.systems.DriveBase;
  */
 
 public class Robot extends TimedRobot {
+  // Constants
+  public static final double DRIVE_DOWN_POWER = 0.25;
+
+  // Start time
+  public static long stateStartTime = 0l;
+
+  // Climb down stop time
+  public static long climbDownStopTime = 0l;
+
+  // Robot state
+  public static AutoState robotState = AutoState.ClimbDwnWaitCmd;
+
   // Declare objects for robot
   private Camera camera;
   private DriveBase drivetrain;
@@ -67,8 +80,11 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     System.out.println("[code] Initializing auto...");
 
-    // Enable joystick
-    drivetrain.enableJoystick();
+    // Set first command
+    stateStartTime = System.currentTimeMillis();
+    climbDownStopTime = stateStartTime + 3000;
+
+    robotState = AutoState.DwnPistonExtend;
   }
 
   /**
@@ -76,6 +92,46 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
+    switch (robotState) {
+    case DwnPistonExtend:
+      // ACTIVATE SOLENOID 4
+      System.out.println("[code] Extending climber pistons...");
+
+      if (System.currentTimeMillis() >= climbDownStopTime) {
+        stateStartTime = System.currentTimeMillis();
+        robotState = AutoState.DwnDriveFwdY;
+      }
+      break;
+    case DwnDriveFwdY:
+      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 1, stateStartTime)) {
+        stateStartTime = System.currentTimeMillis();
+        climbDownStopTime = stateStartTime + 3000;
+
+        robotState = AutoState.DwnPistonRetract;
+      }
+      break;
+    case DwnPistonRetract:
+      // ACTIVATE SOLENOID 5
+      System.out.println("[code] Retracting climber pistons...");
+
+      if (System.currentTimeMillis() >= climbDownStopTime) {
+        stateStartTime = System.currentTimeMillis();
+        robotState = AutoState.DwnDriveFwdZ;
+      }
+      break;
+    case DwnDriveFwdZ:
+      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 1, stateStartTime)) {
+        drivetrain.enableJoystick();
+        robotState = AutoState.ClimbDwnDone;
+      }
+      break;
+    case ClimbDwnDone:
+      break;
+    default:
+      robotState = AutoState.ClimbDwnDone;
+      break;
+    }
+
     // Update drivetrain output with joystick
     drivetrain.arcadeDrive(joystick.getX(), joystick.getY(), joystick.getZ(), joystick.getMagnitude());
   }
@@ -86,8 +142,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     System.out.println("[code] Initializing teleop...");
-    
-    // Always enable joystick when teleop starts in case we are testing or something is wrong
+
+    // Always enable joystick when teleop starts in case we are testing or something
+    // is wrong
     drivetrain.enableJoystick();
   }
 

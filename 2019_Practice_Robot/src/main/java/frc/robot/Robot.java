@@ -6,7 +6,11 @@
 
 package frc.robot;
 
+import java.util.Scanner;
+import java.io.File;
+import java.io.IOException;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Joystick;
 import frc.robot.systems.Camera;
 import frc.robot.systems.DriveBase;
@@ -45,6 +49,35 @@ public class Robot extends TimedRobot {
   private Joystick joystick;
 
   /**
+   * This method returns true if the auto is enabled
+   * 
+   * @return Auto enabled
+   */
+  public boolean getAutoEnabled() {
+    String directory = Filesystem.getDeployDirectory() + "/";
+    int auto;
+
+    // Read file
+    try {
+      Scanner scanner = new Scanner(new File(directory + "auto.conf"));
+      auto = scanner.nextInt();
+      scanner.close();
+    } catch (IOException e) {
+      // File does not exist
+      return false;
+    }
+
+    // Auto enabled?
+    if (auto == 1) {
+      // Auto enabled
+      return true;
+    }
+
+    // Auto is disabled
+    return false;
+  }
+
+  /**
    * This method is called to initialize the robot
    */
   @Override
@@ -69,6 +102,13 @@ public class Robot extends TimedRobot {
     camera.startCamera2();
     System.out.println("[code] Camera 2 initialized");
 
+    // Check auto
+    if (getAutoEnabled()) {
+      System.out.println("[code] Auto enabled");
+    } else {
+      System.out.println("[code] Auto disabled");
+    }
+
     System.out.println("[code] Robot initialized");
   }
 
@@ -91,7 +131,14 @@ public class Robot extends TimedRobot {
     stateStartTime = System.currentTimeMillis();
     stateStopTime = stateStartTime + CLIMBER_PISTON_ACTUATION_TIME;
 
-    robotState = AutoState.DwnPistonExtend;
+    if (getAutoEnabled()) {
+      // Auto is enabled
+      robotState = AutoState.DwnPistonExtend;
+    } else {
+      // Auto is disabled
+      drivetrain.enableJoystick();
+      robotState = AutoState.ClimbDwnDone;
+    }
   }
 
   /**

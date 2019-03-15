@@ -9,6 +9,7 @@ package frc.robot.systems;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 
 /**
  * This class controls the drivetrain
@@ -69,6 +70,26 @@ public class DriveBase {
         // Set up slave talons
         flm.follow(blm);
         frm.follow(brm);
+    }
+
+    /**
+     * Puts the drive in brake mode
+     */
+    public void setBrake() {
+        blm.setNeutralMode(NeutralMode.Brake);
+        brm.setNeutralMode(NeutralMode.Brake);
+        flm.setNeutralMode(NeutralMode.Brake);
+        blm.setNeutralMode(NeutralMode.Brake);
+    }
+
+    /**
+     * Puts the drive in coast mode
+     */
+    public void setCoast() {
+        blm.setNeutralMode(NeutralMode.Coast);
+        brm.setNeutralMode(NeutralMode.Coast);
+        flm.setNeutralMode(NeutralMode.Coast);
+        blm.setNeutralMode(NeutralMode.Coast);
     }
 
     /**

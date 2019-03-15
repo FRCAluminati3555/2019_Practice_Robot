@@ -12,6 +12,7 @@ import java.io.IOException;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Talon;
 import frc.robot.systems.Camera;
 import frc.robot.systems.DriveBase;
 
@@ -24,15 +25,15 @@ import frc.robot.systems.DriveBase;
 
 public class Robot extends TimedRobot {
   // Constants
-  public static final double DRIVE_DOWN_POWER = -0.25;
-  public static final long CLIMBER_PISTON_ACTUATION_TIME = 3000;
+  public static final double DRIVE_DOWN_POWER = -0.5;
+  public static final long CLIMBER_PISTON_ACTUATION_TIME = 2000;
   public static final double DRIVE_UP_POWER = 0.25;
 
-  public static final int STOP_AUTO_BUTTON_1 = 1;
-  public static final int STOP_AUTO_BUTTON_2 = 2;
+  public static final int STOP_AUTO_BUTTON_1 = 8;
+  public static final int STOP_AUTO_BUTTON_2 = 9;
 
-  public static final int CLIMB_UP_BUTTON_1 = 3;
-  public static final int CLIMB_UP_BUTTON_2 = 4;
+  public static final int CLIMB_UP_BUTTON_1 = 4;
+  public static final int CLIMB_UP_BUTTON_2 = 5;
 
   // Start time
   public static long stateStartTime = 0l;
@@ -47,6 +48,9 @@ public class Robot extends TimedRobot {
   private Camera camera;
   private DriveBase drivetrain;
   private Joystick joystick;
+
+  private Talon intake1;
+  private Talon intake2;
 
   /**
    * This method returns true if the auto is enabled
@@ -109,6 +113,9 @@ public class Robot extends TimedRobot {
       System.out.println("[code] Auto disabled");
     }
 
+    intake1 = new Talon(0);
+    intake2 = new Talon(1);
+
     System.out.println("[code] Robot initialized");
   }
 
@@ -134,6 +141,8 @@ public class Robot extends TimedRobot {
     if (getAutoEnabled()) {
       // Auto is enabled
       robotState = AutoState.DwnPistonExtend;
+
+      drivetrain.setBrake();
     } else {
       // Auto is disabled
       drivetrain.enableJoystick();
@@ -166,14 +175,16 @@ public class Robot extends TimedRobot {
     case DwnPistonExtend:
       // ACTIVATE SOLENOID 4
       System.out.println("[code] Extending climber pistons...");
+      intake1.set(0.25);
 
       if (System.currentTimeMillis() >= stateStopTime) {
+        intake1.set(0);
         stateStartTime = System.currentTimeMillis();
         robotState = AutoState.DwnDriveFwdY;
       }
       break;
     case DwnDriveFwdY:
-      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 1, stateStartTime)) {
+      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 0.375, stateStartTime)) {
         stateStartTime = System.currentTimeMillis();
         stateStopTime = stateStartTime + CLIMBER_PISTON_ACTUATION_TIME;
 
@@ -183,19 +194,22 @@ public class Robot extends TimedRobot {
     case DwnPistonRetract:
       // ACTIVATE SOLENOID 5
       System.out.println("[code] Retracting climber pistons...");
+      intake1.set(-0.25);
 
       if (System.currentTimeMillis() >= stateStopTime) {
+        intake1.set(0);
         stateStartTime = System.currentTimeMillis();
         robotState = AutoState.DwnDriveFwdZ;
       }
       break;
     case DwnDriveFwdZ:
-      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 1, stateStartTime)) {
+      if (drivetrain.drive(DRIVE_DOWN_POWER, DRIVE_DOWN_POWER, 0.5, stateStartTime)) {
         drivetrain.enableJoystick();
         robotState = AutoState.ClimbDwnDone;
       }
       break;
     case ClimbDwnDone:
+      drivetrain.setCoast();
       break;
     default:
       // Something is wrong. Give control to the drivers
@@ -244,6 +258,8 @@ public class Robot extends TimedRobot {
     // Auto switch statement
     switch (robotState) {
     case ClimbUpWaitCmd:
+      drivetrain.setCoast();
+
       // Check for climb command
       if (joystick.getRawButton(CLIMB_UP_BUTTON_1) && joystick.getRawButton(CLIMB_UP_BUTTON_2)) {
         // Disable joystick
@@ -251,11 +267,14 @@ public class Robot extends TimedRobot {
 
         // Set state
         robotState = AutoState.UpLeverExtend;
+
+        drivetrain.setBrake();
       }
       break;
     case UpLeverExtend:
       // Run climber
       System.out.println("[code] Extending climber...");
+      intake2.set(0.25);
 
       // RUN CLIMBER MOTOR
       // CHECK POTENTIOMETER
@@ -280,7 +299,9 @@ public class Robot extends TimedRobot {
       // ACTIVATE SOLENOID 4
       System.out.println("[code] Extending climber pistons...");
 
+      intake1.set(0.25);
       if (System.currentTimeMillis() >= stateStopTime) {
+        intake1.set(0);
         stateStartTime = System.currentTimeMillis();
         robotState = AutoState.UpDriveFwdA;
       }
@@ -293,7 +314,7 @@ public class Robot extends TimedRobot {
     case UpLeverRetract:
       // Storing climber
       System.out.println("[code] Retracting climber...");
-
+      intake2.set(-0.25);
       // RUN CLIMBER MOTOR
       // CHECK POTENTIOMETER
 
@@ -315,8 +336,10 @@ public class Robot extends TimedRobot {
     case UpPistonRetract:
       System.out.println("[code] Retracting climber pistons...");
       // ACTIVATE SOLENOID 5
+      intake1.set(-0.25);
 
       if (System.currentTimeMillis() >= stateStopTime) {
+        intake1.set(0);
         stateStartTime = System.currentTimeMillis();
         robotState = AutoState.UpDriveFwdC;
       }
